@@ -1,5 +1,9 @@
 import streamlit as st
 import requests
+from langchain_community.chat_models import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(openai_api_key="your-api-key", model="gpt-4o")
 
 st.title("SnapChef: Recipe Suggestion RAG")
 
@@ -103,11 +107,81 @@ if st.button("Generate Recipe"):
         #     "3. Enjoy your customized recipe!"
         # )
 
-        output_recipe = (
-            f"### DB query\n"
-            f"{query}\n"
-            f"### API response\n"
-            f"{api_response}\n"
-        )
+        # output_recipe = (
+        #     f"### DB query\n"
+        #     f"{query}\n"
+        #     f"### API response\n"
+        #     f"{api_response}\n"
+        # )
         # output_recipe = (query)
+        # st.markdown(output_recipe)
+
+        recipe_summary = ""
+
+        for i, recipe in enumerate(api_response, 1):
+            title = recipe.get("name", "Untitled Recipe")
+            servings = recipe.get("servings", "N/A")
+
+            # Short description
+            description = recipe.get("description", "")
+            # first_sentence = description.split(".")[0] + "." if description else ""
+
+            # Ingredients (if present)
+            ingredients = recipe.get("ingredients_raw", [])  # adapt the key name if needed
+            if isinstance(ingredients, str):
+                ingredients = [ingredients]  # just in case it's a string
+            ingredients_formatted = ", ".join(ingredients) if ingredients else "Not specified"
+
+            # Steps or instructions (if present)
+            steps = recipe.get("steps", "")
+            steps_formatted = steps if steps else "No steps provided."
+
+            # Add to summary
+            recipe_summary += (
+                f"{i}. {title} — serves {servings}\n"
+                f"   Description: {description}\n"
+                f"   Ingredients: {ingredients_formatted}\n"
+                f"   Steps: {steps_formatted}\n\n"
+            )
+
+        user_intent = prompt if prompt else "Find a recipe"
+        ingredients_display = ", ".join(st.session_state['ingredients_list'])
+
+        llm_prompt = f"""
+        The user describes the dish they would like to have as "{user_intent}".
+        Here is a summary of the top 5 recipes that match users interest:
+        {recipe_summary}
+
+        Using this information, suggest the best recipe that fits user's requirements of:
+        - Time available: {cooking_time}
+        - Ingredients available: {st.session_state['ingredients_list']}
+
+        The suggested recipe should have the following:
+        1. Dish name
+        2. Approximate Cook time
+        3. Ingridients for {serving_size} servings
+        4. Cooking steps in bullet points
+
+        Feel free to adapt the recipe according to the user needs and the ingredients user has. 
+        """
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a helpful assistant."),
+            ("human", "{topic}")
+        ])
+
+        chain = prompt | llm
+
+        llm_response = chain.invoke({"topic": llm_prompt})
+
+        output_recipe = (
+            # f"### DB query\n"
+            # # f"{query}\n"
+            # f"### LLM prompt\n"
+            # f"{llm_prompt}\n"
+            # f"### LLM response\n"
+            f"{llm_response.content}\n"
+        )
+
         st.markdown(output_recipe)
+
