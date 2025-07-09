@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 st.title("SnapChef: Recipe Suggestion RAG")
 
@@ -77,16 +78,36 @@ prompt = st.text_area(
 # Generate and Output Recipe 
 if st.button("Generate Recipe"):
     with st.spinner("Generating your recipe using RAG model..."):
-        ingredients_display = ", ".join(st.session_state["ingredients_list"])
-        output_recipe = (
-            f"### Suggested Recipe\n"
-            f"- **Serving Size:** {serving_size}\n"
-            f"- **Cooking Time:** {cooking_time}\n"
-            f"- **Ingredients:** {ingredients_display}\n"
-            f"- **Prompt:** {prompt}\n\n"
-            "**Instructions:**\n"
-            "1. Prepare your ingredients.\n"
-            "2. Follow your preferred cooking method based on the time and ingredients.\n"
-            "3. Enjoy your customized recipe!"
+        query = f"{prompt} that can be made with {', '.join(st.session_state['ingredients_list'])} and takes {cooking_time}."
+        response = requests.get(
+            "http://127.0.0.1:5000/search",
+            params={"query": query, "n": 5}
         )
+        
+        if response.ok:
+            api_response = response.json()
+        else:
+            api_response = f"API returned error {response.status_code}: {response.text}"
+
+
+        # ingredients_display = ", ".join(st.session_state["ingredients_list"])
+        # output_recipe = (
+        #     f"### Suggested Recipe\n"
+        #     f"- **Serving Size:** {serving_size}\n"
+        #     f"- **Cooking Time:** {cooking_time}\n"
+        #     f"- **Ingredients:** {ingredients_display}\n"
+        #     f"- **Prompt:** {prompt}\n\n"
+        #     "**Instructions:**\n"
+        #     "1. Prepare your ingredients.\n"
+        #     "2. Follow your preferred cooking method based on the time and ingredients.\n"
+        #     "3. Enjoy your customized recipe!"
+        # )
+
+        output_recipe = (
+            f"### DB query\n"
+            f"{query}\n"
+            f"### API response\n"
+            f"{api_response}\n"
+        )
+        # output_recipe = (query)
         st.markdown(output_recipe)
