@@ -1,6 +1,49 @@
 import streamlit as st
+from streamlit_oauth import OAuth2Component
+import os
 
 st.title("🍳 SnapChef: Recipe Suggestion RAG")
+
+client_id = st.secrets["GOOGLE_CLIENT_ID"]
+client_secret = st.secrets["GOOGLE_CLIENT_SECRET"]
+redirect_uri = "http://localhost:8501"  
+
+token = None
+
+# Initialize OAuth component
+oauth2 = OAuth2Component(
+    client_id=client_id,
+    client_secret=client_secret,
+    authorize_endpoint="https://accounts.google.com/o/oauth2/auth",
+    token_endpoint="https://oauth2.googleapis.com/token"
+)
+
+# Trigger auth
+# token = oauth2.authorize_button(
+#     name="Continue with Google",
+#     redirect_uri=redirect_uri,
+#     scope="openid email profile",
+#     key="google_login"
+# )
+# # token = True
+
+if 'token' not in st.session_state:
+    # If not, show authorize button
+    result = oauth2.authorize_button("Log in using Google","http://localhost:8501", "openid email profile")
+    if result and 'token' in result:
+        # If authorization successful, save token in session state
+        st.session_state.token = result.get('token')
+        st.rerun()
+else:
+    # If token exists in session state, show the token
+    token = st.session_state['token']
+    st.json(token)
+    # if st.button("Refresh Token"):
+    #     # If refresh token button is clicked, refresh the token
+    #     token = oauth2.refresh_token(token)
+    #     st.session_state.token = token
+    #     st.rerun()
+
 
 # Servings
 st.markdown("### Servings")
@@ -46,8 +89,7 @@ for i in sorted(remove_indices, reverse=True):
 st.markdown("### Preferences")
 prompt = st.text_area("Describe preferences", placeholder="e.g., I want a spicy, low-oil recipe")
 
-# Navigate to generation page
-if st.button("Generate Recipe"):
+if token and st.button("Generate Recipe"):
     st.session_state["serving_size"] = serving_size
     st.session_state["cooking_time"] = cooking_time
     st.session_state["prompt"] = prompt

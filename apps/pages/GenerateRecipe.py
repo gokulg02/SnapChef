@@ -24,7 +24,7 @@ prompt_text = st.session_state["prompt"]
 ingredients_list = st.session_state["ingredients_list"]
 
 llm = ChatOpenAI(
-    openai_api_key="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",
+    openai_api_key= st.secrets["OPEN_AI_API_KEY"],
     model="gpt-4o"
 )
 

@@ -7,7 +7,7 @@ import chromadb
 # ------------------------------
 # Load your CSV ONCE at startup
 # ------------------------------
-CSV_PATH = "/Users/ketki/Documents/SnapChef/recipes.csv"
+CSV_PATH = "ChromaDB/recipes.csv"
 RECIPES_DF = pd.read_csv(CSV_PATH)
 chroma_client = chromadb.PersistentClient(path="dataset")
 collection = chroma_client.get_or_create_collection(name="my_collection")
