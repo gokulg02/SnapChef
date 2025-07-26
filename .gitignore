@@ -1,4 +1,3 @@
-dataset/
-embeddings_new.ipynb
+services/ChromaDB
 recipes.csv
 apps/.streamlit/secrets.toml
