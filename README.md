@@ -36,14 +36,14 @@ SnapChef is comprised of a Streamlit frontend and a Flask backend:
     * The user logs in via Google OAuth to start.
     * The user inputs their desired serving size, cooking time, available ingredients, and any other preferences on the **Home** page.
     * Upon clicking "Generate Recipe," the application sends a request to the backend API with the user's query.
-    * The top 5 recipe results from the API are then passed to a language model (GPT-4o).
-    * The language model generates a detailed recipe that is displayed to the user.
+    * The top 5 recipe results from the chromaDB search API are then passed to a language model (GPT-4o).
+    * The language model generates a detailed recipe curated to the user's preferences and displays it to the user.
     * The user can then ask follow-up questions to further refine the recipe.
 
 2.  **Backend (Flask)**:
     * The backend is a simple Flask server with a `/search` endpoint.
     * This endpoint receives a query from the frontend and uses a ChromaDB vector database to find the most relevant recipes from its dataset.
-    * The matched recipes are then returned to the frontend.
+    * The top 5 matched recipes are then returned to the frontend.
 
 ---
 
@@ -66,11 +66,23 @@ SnapChef is comprised of a Streamlit frontend and a Flask backend:
         GOOGLE_CLIENT_SECRET = "your_google_client_secret"
         OPEN_AI_API_KEY = "your_openai_api_key"
         ```
-4.  **Run the backend server:**
+4.  **Create VectorDB**
+    * The recipies dataset [linked here](https://www.kaggle.com/datasets/realalexanderwei/food-com-recipes-with-ingredients-and-tags) has been used as refererence for the language model to generate new recipies.
+    * This dataset has been vectorized and stored using ChromaDB in order to facilitate retrival of relevant recipies based o user queries. The code to generate this vector DB can be found in  `generate_embedding.ipynb`. 
+    * Since this step requires significant GPU compute resources, we have made the vectorDB file available in our HuggingFace repository, [linked here](https://huggingface.co/datasets/KetkiKP/ChromaDB). The files in the HuggingFace repo needs to be placed in `services/ChromaDB`.
+5.  **Deploy the Flask backend server using Docker:**
+    * Build the Docker Image
     ```bash
-    python services/app.py
+    docker build -t snapchef-backend -f services/Dockerfile .
     ```
-5.  **Run the Streamlit app:**
+    * Run the Flask App Container
+    ```bash
+    docker run -d -p 5000:5000 --name snapchef-backend \
+      -v $(pwd)/services/ChromaDB:/app/services/ChromaDB \
+      snapchef-backend
+    ```
+
+6.  **Run the Streamlit app:**
     ```bash
     streamlit run apps/Home.py
     ```
