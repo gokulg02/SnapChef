@@ -2,12 +2,15 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import chromadb
+from sentence_transformers import SentenceTransformer
 
 # Load dataset
 csv_path = "services/ChromaDB/recipes.csv"
 RECIPES_DF = pd.read_csv(csv_path)
 chroma_client = chromadb.PersistentClient(path="services/ChromaDB/dataset")
 collection = chroma_client.get_or_create_collection(name="my_collection")
+model = SentenceTransformer("all-MiniLM-L6-v2")
+    
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -17,9 +20,11 @@ def query_chroma(
     query_texts,
     n_results=5
 ):
+    query_embedding = model.encode(query_texts)
+    
     # Query Chroma for similar IDs
     results = collection.query(
-        query_texts=query_texts,
+        query_embeddings=query_embedding,
         n_results=n_results
     )
 
